@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import { describeSelection, fetchHorizonCurve, fetchMeta, fetchMetrics, fetchSeries } from './api'
 import Controls from './components/Controls'
+import DecisionSnapshot from './components/DecisionSnapshot'
 import KpiCards from './components/KpiCards'
 import BiasNote from './components/BiasNote'
 import PlanningPanel from './components/PlanningPanel'
@@ -65,14 +66,12 @@ export default function App() {
 
   return (
     <div className="app">
-      <header>
-        <div>
-          <p className="eyebrow">GB national wind · Elexon BMRS · January 2026</p>
-          <h1>Wind Forecast Monitor</h1>
-          <p className="muted">
-            See the wind forecast you would have had at decision time, and how far off it turned out to be.
-          </p>
-        </div>
+      <header className="page-header">
+        <p className="eyebrow">GB national wind · Elexon BMRS · January 2026</p>
+        <h1>Wind Forecast Monitor</h1>
+        <p className="lede">
+          See the wind forecast you would have had at decision time, and how far off it turned out to be.
+        </p>
       </header>
 
       <Controls start={start} end={end} mode={mode} gateClosure={gateClosure} horizon={horizon}
@@ -81,6 +80,7 @@ export default function App() {
       {error && <div className="error">Could not load data: {error}</div>}
       {loading && <div className="loading">Loading…</div>}
 
+      {mode === 'decision' && <DecisionSnapshot rows={rows} gateClosure={gateClosure} />}
       <KpiCards m={metrics} />
       <BiasNote m={metrics} curve={curve} />
       <ForecastChart rows={rows} description={description} />

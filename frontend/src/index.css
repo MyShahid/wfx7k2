@@ -5,12 +5,17 @@
   --muted: #5d6b78;
   --border: #dde3e9;
   --grid: #e9edf1;
+  --hover: rgba(93, 107, 120, 0.1);
   --actual: #0f766e;
   --forecast: #2563eb;
   --bad: #dc2626;
   --good: #16a34a;
   --warn: #b45309;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
   color: var(--text);
   background: var(--bg);
 }
@@ -23,6 +28,7 @@
     --muted: #93a1ae;
     --border: #2a3540;
     --grid: #222c36;
+    --hover: rgba(147, 161, 174, 0.1);
     --actual: #2dd4bf;
     --forecast: #60a5fa;
     --bad: #f87171;
@@ -34,3 +40,4 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); }
+button, input { font: inherit; }
