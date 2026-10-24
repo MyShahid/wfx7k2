@@ -11,9 +11,17 @@ async function get(path, params) {
   return res.json()
 }
 
-export const fetchSeries = (start, end, horizon) => get('series', { start, end, horizon })
-export const fetchMetrics = (start, end, horizon) => get('metrics', { start, end, horizon })
+// `selection` is either { horizon } or { gate_closure }
+export const fetchSeries = (start, end, selection) => get('series', { start, end, ...selection })
+export const fetchMetrics = (start, end, selection) => get('metrics', { start, end, ...selection })
 export const fetchHorizonCurve = (start, end) => get('horizon-curve', { start, end })
+export const fetchMeta = () => get('meta', {})
+
+// How the forecast was picked, in words, for the active mode
+export const describeSelection = ({ mode, gateClosure, horizon }) =>
+  mode === 'decision'
+    ? `latest forecast available at ${gateClosure} the day before`
+    : `latest forecast published at least ${horizon} h before each hour`
 
 // Helpers for display
 export const toGW = (mw) => (mw == null ? null : mw / 1000)

@@ -1,14 +1,14 @@
 import { fmtGW } from '../api'
 
 // Turns the error statistics into a procurement rule of thumb.
-export default function PlanningPanel({ m, horizon }) {
+export default function PlanningPanel({ m, description }) {
   if (!m || !m.count) return null
   const p10 = m.error_p10 // 10% of hours: actual was at least this far below/above forecast
   return (
     <section className="card planning">
       <h2>What this means for day-ahead buying</h2>
       <p>
-        Using forecasts published <b>{horizon} h</b> ahead, actual wind was on average{' '}
+        Using the <b>{description}</b>, actual wind was on average{' '}
         <b>{fmtGW(Math.abs(m.bias), 2)} {m.bias < 0 ? 'below' : 'above'}</b> the forecast.
       </p>
       <ul>

@@ -27,7 +27,7 @@ h2 { margin: 0 0 4px; font-size: 17px; }
   align-items: flex-end;
 }
 .controls label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
-.controls input[type='date'] { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
+.controls input[type='date'], .controls input[type='time'] { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
 .controls .horizon { flex: 1; min-width: 240px; }
 .controls small { color: var(--muted); }
 .presets { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; }
@@ -36,6 +36,7 @@ h2 { margin: 0 0 4px; font-size: 17px; }
   background: var(--bg); color: var(--text); cursor: pointer;
 }
 .presets button:hover { border-color: var(--forecast); }
+.presets button[aria-pressed='true'] { background: var(--forecast); border-color: var(--forecast); color: var(--bg); }
 
 .kpis {
   display: grid;

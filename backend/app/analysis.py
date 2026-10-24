@@ -5,6 +5,10 @@ Key rule (forecast horizon H):
     For a target time T, use the LATEST forecast whose publishTime <= T - H.
     That is the newest forecast available H hours before delivery.
 
+Decision-time rule (gate closure G, UK local time):
+    For a target time T on UK delivery day D, use the LATEST forecast whose
+    publishTime <= G on day D-1. Every hour of D uses the same forecast run.
+
 Error convention:
     error = actual - forecast
     error < 0  -> wind came in BELOW forecast (shortfall, risky for the buyer)
@@ -12,12 +16,15 @@ Error convention:
 """
 from bisect import bisect_right
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta, timezone
 from math import sqrt
+from zoneinfo import ZoneInfo
 
 # Beyond ~43h some January target hours have no forecast, so cap the horizon
 # here to keep every horizon averaged over the same set of hours.
 MAX_HORIZON_HOURS = 40
+
+UK = ZoneInfo("Europe/London")
 
 
 def parse_time(s: str) -> datetime:
@@ -38,28 +45,46 @@ class ForecastIndex:
         self._runs = {t: sorted(v) for t, v in runs.items()}
         self._pub_times = {t: [p for p, _ in v] for t, v in self._runs.items()}
 
-    def latest_before(self, target: datetime, horizon_hours: float):
-        """Latest forecast for `target` published at least `horizon_hours` earlier."""
+    def latest_at_or_before(self, target: datetime, cutoff: datetime):
+        """Latest forecast for `target` published at or before `cutoff`."""
         pubs = self._pub_times.get(target)
         if not pubs:
             return None
-        cutoff = target - timedelta(hours=horizon_hours)
         i = bisect_right(pubs, cutoff)          # pubs[:i] are all <= cutoff
         if i == 0:
             return None
         publish_time, generation = self._runs[target][i - 1]
         return publish_time, generation
 
+    def latest_before(self, target: datetime, horizon_hours: float):
+        """Latest forecast for `target` published at least `horizon_hours` earlier."""
+        return self.latest_at_or_before(target, target - timedelta(hours=horizon_hours))
 
-def build_series(actuals: list[dict], index: ForecastIndex,
-                 start: datetime, end: datetime, horizon_hours: float) -> list[dict]:
-    """Actual vs selected forecast for every target time in [start, end)."""
+
+def decision_cutoff(target: datetime, gate_closure: str) -> datetime:
+    """Gate closure ("HH:MM", UK local) on the day before the target's UK
+    delivery date, returned in UTC."""
+    hh, mm = map(int, gate_closure.split(":"))
+    delivery_day = target.astimezone(UK).date()
+    local = datetime.combine(delivery_day - timedelta(days=1), time(hh, mm), tzinfo=UK)
+    return local.astimezone(timezone.utc)
+
+
+def build_series(actuals: list[dict], index: ForecastIndex, start: datetime, end: datetime,
+                 horizon_hours: float, gate_closure: str | None = None) -> list[dict]:
+    """Actual vs selected forecast for every target time in [start, end).
+
+    With `gate_closure` the forecast is picked by decision time (and
+    `horizon_hours` is ignored); otherwise by fixed horizon."""
     rows = []
     for a in actuals:
         t = parse_time(a["startTime"])
         if not (start <= t < end):
             continue
-        f = index.latest_before(t, horizon_hours)
+        if gate_closure:
+            f = index.latest_at_or_before(t, decision_cutoff(t, gate_closure))
+        else:
+            f = index.latest_before(t, horizon_hours)
         row = {"time": iso(t), "actual": a["generation"],
                "forecast": None, "publishTime": None, "leadHours": None, "error": None}
         if f:

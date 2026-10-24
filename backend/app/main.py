@@ -14,6 +14,11 @@ from .data import load
 DATA_FIRST_DAY = date(2026, 1, 1)
 DATA_LAST_DAY = date(2026, 1, 31)
 
+# Day-ahead auction gate closure on D-1, UK local time. This is a configurable
+# assumption: confirm the actual time with the client's trading desk.
+DEFAULT_GATE_CLOSURE = "09:20"
+GATE_CLOSURE_PATTERN = r"^([01]\d|2[0-3]):[0-5]\d$"
+
 app = FastAPI(title="UK Wind Forecast Monitor", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
 
@@ -37,25 +42,29 @@ def health():
 @app.get("/api/meta")
 def meta():
     return {"first_day": DATA_FIRST_DAY, "last_day": DATA_LAST_DAY,
-            "default_horizon": 24, "max_horizon": MAX_HORIZON_HOURS, "unit": "MW"}
+            "default_horizon": 24, "max_horizon": MAX_HORIZON_HOURS,
+            "default_gate_closure": DEFAULT_GATE_CLOSURE, "unit": "MW"}
 
 
 @app.get("/api/series")
 def series(start: date = Query(DATA_FIRST_DAY), end: date = Query(DATA_LAST_DAY),
-           horizon: float = Query(24, ge=0, le=MAX_HORIZON_HOURS)):
-    """Actual wind generation vs the forecast available `horizon` hours earlier."""
+           horizon: float = Query(24, ge=0, le=MAX_HORIZON_HOURS),
+           gate_closure: str | None = Query(None, pattern=GATE_CLOSURE_PATTERN)):
+    """Actual wind generation vs the forecast available at gate closure on the
+    day before (if `gate_closure` is given) or `horizon` hours earlier."""
     frm, to = to_range(start, end)
     actuals, index, _ = load()
-    return build_series(actuals, index, frm, to, horizon)
+    return build_series(actuals, index, frm, to, horizon, gate_closure)
 
 
 @app.get("/api/metrics")
 def metrics(start: date = Query(DATA_FIRST_DAY), end: date = Query(DATA_LAST_DAY),
-            horizon: float = Query(24, ge=0, le=MAX_HORIZON_HOURS)):
-    """Accuracy statistics for the chosen period and horizon."""
+            horizon: float = Query(24, ge=0, le=MAX_HORIZON_HOURS),
+            gate_closure: str | None = Query(None, pattern=GATE_CLOSURE_PATTERN)):
+    """Accuracy statistics for the chosen period and gate closure or horizon."""
     frm, to = to_range(start, end)
     actuals, index, _ = load()
-    return compute_metrics(build_series(actuals, index, frm, to, horizon))
+    return compute_metrics(build_series(actuals, index, frm, to, horizon, gate_closure))
 
 
 @app.get("/api/horizon-curve")
