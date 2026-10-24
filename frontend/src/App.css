@@ -60,6 +60,11 @@ h2 { margin: 0 0 4px; font-size: 17px; }
 
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
 
+.note {
+  margin: 0; padding: 10px 14px; font-size: 14px;
+  background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--warn); border-radius: 8px;
+}
+
 .error { background: var(--bad); color: #fff; padding: 10px 14px; border-radius: 8px; }
 .loading { color: var(--muted); font-size: 14px; }
 footer { margin-top: 8px; font-size: 13px; }

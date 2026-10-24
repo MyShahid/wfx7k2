@@ -3,6 +3,7 @@ import './App.css'
 import { describeSelection, fetchHorizonCurve, fetchMeta, fetchMetrics, fetchSeries } from './api'
 import Controls from './components/Controls'
 import KpiCards from './components/KpiCards'
+import BiasNote from './components/BiasNote'
 import PlanningPanel from './components/PlanningPanel'
 import ForecastChart from './components/ForecastChart'
 import { ErrorByHour, ErrorHistogram } from './components/ErrorCharts'
@@ -18,12 +19,20 @@ export default function App() {
   const [rows, setRows] = useState([])
   const [metrics, setMetrics] = useState(null)
   const [curve, setCurve] = useState([])
+  const [curveError, setCurveError] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
+  // Loading = the filters have changed since the last request settled
+  const [settledKey, setSettledKey] = useState(null)
 
   const update = (patch) => setFilters((f) => ({ ...f, ...patch }))
   const { start, end, mode, gateClosure, horizon } = filters
   const description = describeSelection(filters)
+  const requestKey = [start, end, mode, gateClosure, horizon].join('|')
+  const loading = settledKey !== requestKey
+
+  // Lead-time range of the decision-time series, shown on the horizon chart
+  const leads = mode === 'decision' ? rows.map((r) => r.leadHours).filter((h) => h != null) : []
+  const leadRange = leads.length ? { min: Math.min(...leads), max: Math.max(...leads) } : null
 
   // Default gate closure comes from the API; keep the fallback if that fails
   // or if the user has already changed it
@@ -38,17 +47,20 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
     const selection = mode === 'decision' ? { gate_closure: gateClosure } : { horizon }
-    setLoading(true)
     Promise.all([fetchSeries(start, end, selection), fetchMetrics(start, end, selection)])
       .then(([s, m]) => { if (!cancelled) { setRows(s); setMetrics(m); setError('') } })
       .catch((e) => { if (!cancelled) setError(e.message) })
-      .finally(() => { if (!cancelled) setLoading(false) })
+      .finally(() => { if (!cancelled) setSettledKey(requestKey) })
     return () => { cancelled = true }
-  }, [start, end, mode, gateClosure, horizon])
+  }, [start, end, mode, gateClosure, horizon, requestKey])
 
   // Horizon curve depends only on the date range
   useEffect(() => {
-    fetchHorizonCurve(start, end).then(setCurve).catch(() => setCurve([]))
+    let cancelled = false
+    fetchHorizonCurve(start, end)
+      .then((c) => { if (!cancelled) { setCurve(c); setCurveError('') } })
+      .catch((e) => { if (!cancelled) { setCurve([]); setCurveError(e.message) } })
+    return () => { cancelled = true }
   }, [start, end])
 
   return (
@@ -70,13 +82,15 @@ export default function App() {
       {loading && <div className="loading">Loading…</div>}
 
       <KpiCards m={metrics} />
+      <BiasNote m={metrics} curve={curve} />
       <ForecastChart rows={rows} description={description} />
       <PlanningPanel m={metrics} description={description} />
       <div className="grid-2">
         <ErrorHistogram m={metrics} />
         <ErrorByHour m={metrics} />
       </div>
-      <HorizonChart curve={curve} horizon={horizon} />
+      {curveError && <div className="error">Could not load the horizon curve: {curveError}</div>}
+      <HorizonChart curve={curve} horizon={mode === 'horizon' ? horizon : null} leadRange={leadRange} />
 
       <footer className="muted">
         Data: Elexon BMRS FUELHH (actual, fuel type WIND) and WINDFOR (forecast). Times in UTC. 1 GW = 1,000 MW.
