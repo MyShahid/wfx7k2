@@ -240,7 +240,7 @@ All endpoints are `GET`. Dates are calendar days in UTC.
 
 You need Python 3.12 and Node 22 (the versions used in the Dockerfile).
 
-**Backend** (from `backend/`):
+**Backend**   (from the repo root):
 
 ```powershell
 # Windows PowerShell
@@ -260,7 +260,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-**Frontend** (second terminal, from `frontend/`). The commands are the same on every OS:
+**Frontend** (second terminal, from the repo root). The commands are the same on every OS:
 
 ```bash
 cd frontend
