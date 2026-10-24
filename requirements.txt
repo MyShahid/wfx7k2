@@ -1,2 +1,2 @@
-fastapi
-tzdata
+fastapi==0.162.0
+tzdata==2026.5

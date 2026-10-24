@@ -1,0 +1,11 @@
+# Local-only files that must never be uploaded or bundled.
+# Keep: api/, backend/app, backend/data, requirements.txt, .python-version,
+# vercel.json and everything in frontend/ except node_modules and dist.
+.git
+**/__pycache__
+backend/.venv
+backend/.pytest_cache
+backend/tests
+backend/scripts
+frontend/node_modules
+frontend/dist
